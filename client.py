@@ -6,7 +6,11 @@ queue = list()
 
 # Connect to the device
 device = adb_commands.AdbCommands()
-device.ConnectDevice(port_path=None, serial="192.168.43.168:5555")
+# XCB over wifi
+#device.ConnectDevice(port_path=None, serial="192.168.43.168:5555")
+# XCB over serial port
+device.ConnectDevice(port_path=None, serial="/dev/ttyS11,115200")
+
 
 if sys.argv[1] == 'ls':
 	root = device.List(sys.argv[2])

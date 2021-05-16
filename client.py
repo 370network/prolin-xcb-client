@@ -6,7 +6,9 @@ import os
 import time
 import json
 
-port = '/dev/ttyS3,115200'
+tty = sys.argv[1]
+port = '/dev/tty{},115200'.format(tty)
+command = sys.argv[2]
 
 def init_device(addr):
 	device = adb_commands.AdbCommands()
@@ -52,30 +54,30 @@ def tree(path, device):
 	return all_files, all_directories, all_unknowns
 
 device = init_device(port)
-if sys.argv[1] == 'ls':
-	root = device.List(sys.argv[2])
+if sys.argv[2] == 'ls':
+	root = device.List(sys.argv[3])
 
 	for i in root:
 		print(i[0].decode('utf-8') + ' Perm: ' + str(oct(i[1])) + ' Size: ' + str(i[2]))
 
-if sys.argv[1] == 'pull':
-	root = device.Pull(sys.argv[2], sys.argv[2].replace('/', '_'))
+if command == 'pull':
+	root = device.Pull(sys.argv[3], sys.argv[3].replace('/', '_'))
 	print(root)
 
-if sys.argv[1] == 'push':
-	root = device.Push(sys.argv[2], sys.argv[3])
+if command == 'push':
+	root = device.Push(sys.argv[3], sys.argv[4])
 	print(root)
 
-if sys.argv[1] == 'logcat':
+if command == 'logcat':
 	logcat = device.Logcat()
 	print(logcat)
 
-if sys.argv[1] == 'forward':
+if command == 'forward':
 	print("For port forwarding (ie: for gdbserver) use the original XCB client. xcb.exe connect com:COM12; xcb.exe forward tcp:2020 tcp:2020")
 	print("The protocol for port forwarding should be ADB compatible. However python-adb doesn't support it as of now")
 
-if sys.argv[1] == 'dump':
-	name = sys.argv[2]
+if command == 'dump':
+	name = sys.argv[3]
 	print("[+] Listing everything")
 	all_files, all_directories, all_unknowns = tree('/', device)
 	print("[+] Creating local structure")

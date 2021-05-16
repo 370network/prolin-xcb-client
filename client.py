@@ -61,7 +61,11 @@ if sys.argv[2] == 'ls':
 		print(i[0].decode('utf-8') + ' Perm: ' + str(oct(i[1])) + ' Size: ' + str(i[2]))
 
 if command == 'pull':
-	root = device.Pull(sys.argv[3], sys.argv[3].replace('/', '_'))
+	if sys.argv[4]:
+		target = sys.argv[4]
+	else:
+		target = sys.argv[3].replace('/', '_')
+	root = device.Pull(sys.argv[3], target)
 	print(root)
 
 if command == 'push':

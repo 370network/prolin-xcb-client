@@ -59,17 +59,17 @@ def cmd_dump(device, extra_args):
 	print("[+] Listing everything")
 	all_files, all_directories, all_unknowns = tree('/', device)
 	if len(extra_args) < 2:
-		target = extra_args[1]
-	else:
 		target = "dumps/" + name + '/'
+	else:
+		target = extra_args[1]
 	print("[+] Writing to local path: {}".format(target))
 	if not os.path.exists(target):
-		os.mkdir(target)
+		os.makedirs(target, exist_ok=True)
 	if not os.path.isdir(target):
 		print("Target is not a directory")
 		exit(1)
 	for dir in all_directories:
-		if not os.path.isdir(target + dir):
+		if not os.path.exists(target + dir):
 			os.mkdir(target + dir)
 	print("[+] Pulling all files")
 	for file in all_files:
@@ -103,6 +103,10 @@ def main():
 	if args.serial is not None and args.connect is not None:
 		print("Please only provide serial or network address to connect, not both")
 		exit(1)
+	if args.serial is None and args.connect is None:
+		args.serial = "/dev/ttyACM0"
+	if args.connect is not None and ":" not in args.connect:
+		args.connect += ":5555"
 
 	device = init_device(args)
 
@@ -120,9 +124,9 @@ def main():
 			print("pull <device source> [optional: local destination]")
 			exit(1)
 		if len(extra_args) < 2:
-			target = extra_args[1]
+			target = extra_args[0].replace('/', '_')
 		else:
-			target = extra_args[1].replace('/', '_')
+			target = extra_args[1]
 		root = device.Pull(extra_args[0], target)
 		print(root)
 
@@ -134,7 +138,7 @@ def main():
 		print(root)
 
 	elif command == 'logcat':
-		logcat = device.Logcat()
+		logcat = device.Logcat(options=extra_args)
 		print(logcat)
 
 	elif command == 'forward':

@@ -5,5 +5,5 @@ from setuptools import setup, find_packages
 setup(
   name='prolin-xcb-client',
   version='1.0',
-  scripts=['client.py'],
+  scripts=['src/client.py'],
 )

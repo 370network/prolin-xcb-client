@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 from adb import adb_commands
 from adb import sign_m2crypto
 import stat

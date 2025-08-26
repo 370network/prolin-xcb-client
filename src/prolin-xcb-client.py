@@ -53,15 +53,15 @@ def tree(path, device):
 
 def cmd_dump(device, extra_args):
 	if len(extra_args) < 1:
-		print("dump <device path> [optional: local dump folder]")
+		print("dump <dump name> [optional:  device path to dump]")
 		exit(1)
 	name = extra_args[0]
-	print("[+] Listing everything")
-	all_files, all_directories, all_unknowns = tree('/', device)
-	if len(extra_args) < 2:
-		target = "dumps/" + name + '/'
-	else:
-		target = extra_args[1]
+	target = "dumps/" + name + '/'
+	device_path = "/"
+	if len(extra_args) > 1:
+		device_path = extra_args[1]
+	print("[+] Listing everything from: {}".format(device_path))
+	all_files, all_directories, all_unknowns = tree(device_path, device)
 	print("[+] Writing to local path: {}".format(target))
 	if not os.path.exists(target):
 		os.makedirs(target, exist_ok=True)

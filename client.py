@@ -2,24 +2,21 @@
 from adb import adb_commands
 from adb import sign_m2crypto
 import stat
-import sys
 import os
 import time
 import json
+import argparse
 
-tty = sys.argv[1]
-port = '/dev/tty{},115200'.format(tty)
-command = sys.argv[2]
-
-def init_device(addr):
+def init_device(args):
 	device = adb_commands.AdbCommands()
-	device.ConnectDevice(port_path=None, serial=addr)
-	#device.ConnectDevice(port_path=None, serial="192.168.43.168:5555")
-	#device.ConnectDevice(port_path=None, serial="/dev/ttyS4,115200")
+	if args.connect is not None:
+		device.ConnectDevice(serial=args.connect)
+	else:
+		device.ConnectDevice(serial=args.serial)
 	return device
 
 def scandir(path, device):
-	files = [] 
+	files = []
 	directories = []
 	unknowns = []
 	result = device.List(path)
@@ -54,41 +51,23 @@ def tree(path, device):
 
 	return all_files, all_directories, all_unknowns
 
-device = init_device(port)
-if sys.argv[2] == 'ls':
-	root = device.List(sys.argv[3])
-
-	for i in root:
-		print(i[0].decode('utf-8') + ' Perm: ' + str(oct(i[1])) + ' Size: ' + str(i[2]))
-
-if command == 'pull':
-	if sys.argv[4]:
-		target = sys.argv[4]
-	else:
-		target = sys.argv[3].replace('/', '_')
-	root = device.Pull(sys.argv[3], target)
-	print(root)
-
-if command == 'push':
-	root = device.Push(sys.argv[3], sys.argv[4])
-	print(root)
-
-if command == 'logcat':
-	logcat = device.Logcat()
-	print(logcat)
-
-if command == 'forward':
-	print("For port forwarding (ie: for gdbserver) use the original XCB client. xcb.exe connect com:COM12; xcb.exe forward tcp:2020 tcp:2020")
-	print("The protocol for port forwarding should be ADB compatible. However python-adb doesn't support it as of now")
-
-if command == 'dump':
-	name = sys.argv[3]
+def cmd_dump(device, extra_args):
+	if len(extra_args) < 1:
+		print("dump <device path> [optional: local dump folder]")
+		exit(1)
+	name = extra_args[0]
 	print("[+] Listing everything")
 	all_files, all_directories, all_unknowns = tree('/', device)
-	print("[+] Creating local structure")
-	target = "dumps/" + name + '/'
-	if not os.path.isdir(target):
+	if len(extra_args) < 2:
+		target = extra_args[1]
+	else:
+		target = "dumps/" + name + '/'
+	print("[+] Writing to local path: {}".format(target))
+	if not os.path.exists(target):
 		os.mkdir(target)
+	if not os.path.isdir(target):
+		print("Target is not a directory")
+		exit(1)
 	for dir in all_directories:
 		if not os.path.isdir(target + dir):
 			os.mkdir(target + dir)
@@ -113,4 +92,60 @@ if command == 'dump':
 		f.write(json.dumps(all_directories))
 	with open(target + 'unknowns.txt', 'w') as f:
 		f.write(json.dumps(all_unknowns))
-	
+
+def main():
+	parser = argparse.ArgumentParser(description='Generates ZIP to be flashed with Tegra hboot')
+	parser.add_argument('-s', "--serial", dest="serial", help="Device serial line to use, like /dev/ttyACM0")
+	parser.add_argument('-c', "--connect", dest="connect", help="Device network address to connect, like 192.168.43.168:5555")
+	parser.add_argument("command", choices=["ls", "push"], help="What command to do")
+	args, extra_args = parser.parse_known_args()
+
+	if args.serial is not None and args.connect is not None:
+		print("Please only provide serial or network address to connect, not both")
+		exit(1)
+
+	device = init_device(args)
+
+	command = args.command
+	if command == 'ls':
+		if len(extra_args) < 1:
+			print("ls <device path>")
+			exit(1)
+		root = device.List(extra_args[0])
+		for i in root:
+			print(i[0].decode('utf-8') + ' Perm: ' + str(oct(i[1])) + ' Size: ' + str(i[2]))
+
+	elif command == 'pull':
+		if len(extra_args) < 1:
+			print("pull <device source> [optional: local destination]")
+			exit(1)
+		if len(extra_args) < 2:
+			target = extra_args[1]
+		else:
+			target = extra_args[1].replace('/', '_')
+		root = device.Pull(extra_args[0], target)
+		print(root)
+
+	elif command == 'push':
+		if len(extra_args) < 2:
+			print("push <local source> <device destination>")
+			exit(1)
+		root = device.Push(extra_args[0], extra_args[1])
+		print(root)
+
+	elif command == 'logcat':
+		logcat = device.Logcat()
+		print(logcat)
+
+	elif command == 'forward':
+		print("For port forwarding (ie: for gdbserver) use the original XCB client. xcb.exe connect com:COM12; xcb.exe forward tcp:2020 tcp:2020")
+		print("The protocol for port forwarding should be ADB compatible. However python-adb doesn't support it as of now")
+
+	elif command == 'dump':
+		cmd_dump(device, extra_args)
+
+	else:
+		print("Unknown command! {}".format(command))
+
+if __name__ == '__main__':
+	main()

@@ -97,7 +97,7 @@ def main():
 	parser = argparse.ArgumentParser(description='Generates ZIP to be flashed with Tegra hboot')
 	parser.add_argument('-s', "--serial", dest="serial", help="Device serial line to use, like /dev/ttyACM0")
 	parser.add_argument('-c', "--connect", dest="connect", help="Device network address to connect, like 192.168.43.168:5555")
-	parser.add_argument("command", choices=["ls", "push"], help="What command to do")
+	parser.add_argument("command", choices=["ls", "pull", "push", "logcat", "forward", "dump"], help="What command to do")
 	args, extra_args = parser.parse_known_args()
 
 	if args.serial is not None and args.connect is not None:
@@ -146,6 +146,7 @@ def main():
 
 	else:
 		print("Unknown command! {}".format(command))
+		exit(1)
 
 if __name__ == '__main__':
 	main()

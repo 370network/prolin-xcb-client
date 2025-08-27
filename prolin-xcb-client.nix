@@ -8,8 +8,8 @@ python3Packages.buildPythonApplication rec {
   src = if source != null then source else fetchFromGitHub {
     owner = "370network";
     repo = "prolin-xcb-client";
-    rev = "379a3af3276f18ccb1e18e6301c61d13347cae67";
-    hash = "sha256-riPr+uTArraOQgm4vVn+CYchtD2wsSgO1X2GhkrXnX4=";
+    rev = "943005633104185294d0b6f032ebe407eee85bbe";
+    hash = "sha256-OYzJ/5LGwp0huLImVVvouGDdKBFCW9ir6U/src6ErPY=";
   };
 
   build-system = with python3Packages; [

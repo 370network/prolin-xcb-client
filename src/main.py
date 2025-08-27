@@ -130,6 +130,13 @@ def handle_command(args, extra_args):
 		for line in logcat:
 			print(line)
 
+	elif command == 'get-state':
+		state = device.GetState()
+		if state == None:
+			print("No state value returned")
+		else:
+			print("State: '{}'".format(str(state, 'utf-8')))
+
 	elif command == 'forward':
 		print("Error: For port forwarding (ie: for gdbserver) use the original XCB client. xcb.exe connect com:COM12; xcb.exe forward tcp:2020 tcp:2020")
 		print("The protocol for port forwarding should be ADB compatible. However python-adb doesn't support it as of now")
@@ -148,9 +155,12 @@ def main():
 	parser = argparse.ArgumentParser(description='Prolin XCB client')
 	parser.add_argument('-s', "--serial", dest="serial", help="Device serial line to use, like /dev/ttyACM0")
 	parser.add_argument('-c', "--ip", dest="ip", help="Device network address to connect, like 192.168.43.168:5555")
-	parser.add_argument('-t', "--timeout", type=int, default=None, dest="timeout", help="Connection timeout")
+	parser.add_argument('-t', "--timeout", type=int, default=None, dest="timeout", help="Connection timeout in ms")
 	parser.add_argument('-r', "--retry", type=int, default=5, dest="retry", help="How many connections retries to attempt")
-	parser.add_argument("command", choices=["ls", "pull", "push", "logcat", "forward", "dump"], help="What command to do")
+	parser.add_argument("command", choices=[
+		"ls", "pull", "push", "logcat", "forward",
+		"get-state", "dump"
+	], help="What command to run")
 	args, extra_args = parser.parse_known_args()
 
 	# Load from ENV if any

@@ -1,11 +1,11 @@
-{ lib, fetchFromGitHub, python3Packages, ... }:
+{ lib, fetchFromGitHub, python3Packages, source ? null, ... }:
 
 python3Packages.buildPythonApplication rec {
   pname = "prolin-xcb-client";
   version = "1.0";
   pyproject = true;
 
-  src = fetchFromGitHub {
+  src = if source != null then source else fetchFromGitHub {
     owner = "370network";
     repo = "prolin-xcb-client";
     rev = "19002ce22ddd46a871e5054248147c53077fe3c1";
@@ -17,15 +17,13 @@ python3Packages.buildPythonApplication rec {
   ];
 
   dependencies = with python3Packages; [
-    m2crypto pyserial libusb1
+    m2crypto
+    pyserial
+    libusb1
   ];
 
-  postInstall = ''
-    mv $out/bin/${pname}.py $out/bin/${pname}
-  '';
-
   meta = with lib; {
-    homepage = "https://git.lsd.cat/g/prolin-xcb-client";
+    homepage = "https://github.com/370network/prolin-xcb-client";
     description = "prolin-xcb-client";
     license = licenses.asl20; # No idea but python adb lib is apache 2.0
     platforms = platforms.unix;

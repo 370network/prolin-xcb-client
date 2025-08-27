@@ -9,10 +9,11 @@ import argparse
 
 def init_device(args):
 	device = adb_commands.AdbCommands()
-	if args.connect is not None:
-		device.ConnectDevice(serial=args.connect)
-	else:
-		device.ConnectDevice(serial=args.serial)
+	device.ConnectDevice(
+		serial_port=args.serial,
+		ip=args.ip,
+		default_timeout_ms=args.timeout
+	)
 	return device
 
 def scandir(path, device):
@@ -95,27 +96,12 @@ def cmd_dump(device, args, extra_args):
 	with open(target + 'unknowns.txt', 'w') as f:
 		f.write(json.dumps(all_unknowns))
 
-def main():
-	parser = argparse.ArgumentParser(description='Generates ZIP to be flashed with Tegra hboot')
-	parser.add_argument('-s', "--serial", dest="serial", help="Device serial line to use, like /dev/ttyACM0")
-	parser.add_argument('-c', "--connect", dest="connect", help="Device network address to connect, like 192.168.43.168:5555")
-	parser.add_argument("command", choices=["ls", "pull", "push", "logcat", "forward", "dump"], help="What command to do")
-	args, extra_args = parser.parse_known_args()
-
-	if args.serial is not None and args.connect is not None:
-		print("Please only provide serial or network address to connect, not both")
-		exit(1)
-	if args.serial is None and args.connect is None:
-		args.serial = "/dev/ttyACM0"
-	if args.connect is not None and ":" not in args.connect:
-		args.connect += ":5555"
-
+def handle_command(args, extra_args):
 	device = init_device(args)
-
 	command = args.command
 	if command == 'ls':
 		if len(extra_args) < 1:
-			print("ls <device path>")
+			print("Missing args: ls <device path>")
 			exit(1)
 		root = device.List(extra_args[0])
 		for i in root:
@@ -123,7 +109,7 @@ def main():
 
 	elif command == 'pull':
 		if len(extra_args) < 1:
-			print("pull <device source> [optional: local destination]")
+			print("Missing args: pull <device source> [optional: local destination]")
 			exit(1)
 		if len(extra_args) < 2:
 			target = extra_args[0].replace('/', '_')
@@ -134,25 +120,71 @@ def main():
 
 	elif command == 'push':
 		if len(extra_args) < 2:
-			print("push <local source> <device destination>")
+			print("Missing args: push <local source> <device destination>")
 			exit(1)
 		root = device.Push(extra_args[0], extra_args[1])
 		print(root)
 
 	elif command == 'logcat':
 		logcat = device.Logcat(options=extra_args)
-		print(logcat)
+		for line in logcat:
+			print(line)
 
 	elif command == 'forward':
-		print("For port forwarding (ie: for gdbserver) use the original XCB client. xcb.exe connect com:COM12; xcb.exe forward tcp:2020 tcp:2020")
+		print("Error: For port forwarding (ie: for gdbserver) use the original XCB client. xcb.exe connect com:COM12; xcb.exe forward tcp:2020 tcp:2020")
 		print("The protocol for port forwarding should be ADB compatible. However python-adb doesn't support it as of now")
 
 	elif command == 'dump':
 		cmd_dump(device, extra_args)
 
 	else:
-		print("Unknown command! {}".format(command))
+		print("Error: Unknown command! {}".format(command))
 		exit(1)
+
+	device.Close()
+	device = None
+
+def main():
+	parser = argparse.ArgumentParser(description='Prolin XCB client')
+	parser.add_argument('-s', "--serial", dest="serial", help="Device serial line to use, like /dev/ttyACM0")
+	parser.add_argument('-c', "--ip", dest="ip", help="Device network address to connect, like 192.168.43.168:5555")
+	parser.add_argument('-t', "--timeout", type=int, default=None, dest="timeout", help="Connection timeout")
+	parser.add_argument('-r', "--retry", type=int, default=5, dest="retry", help="How many connections retries to attempt")
+	parser.add_argument("command", choices=["ls", "pull", "push", "logcat", "forward", "dump"], help="What command to do")
+	args, extra_args = parser.parse_known_args()
+
+	# Load from ENV if any
+	if args.ip is None and "PAX_CLIENT_IP" in os.environ:
+		args.ip = os.environ["PAX_CLIENT_IP"]
+	if args.serial is None and "PAX_CLIENT_SERIAL" in os.environ:
+		args.serial = os.environ["PAX_CLIENT_SERIAL"]
+
+	# Handle ip arg
+	if args.ip is not None:
+		if ":" not in args.ip:
+			args.ip += ":5555"
+
+	# Check if any or both are set
+	if args.serial is None and args.ip is None:
+		print("Error: Please provide serial or network address of device to connect")
+		exit(1)
+	if args.serial is not None and args.ip is not None:
+		print("Error: Please only provide serial or network address to connect, not both")
+		exit(1)
+
+	attempts = args.retry
+	while True:
+		try:
+			handle_command(args, extra_args)
+			break
+		except ConnectionError as e:
+			if 0 < attempts:
+				print("Got connection error, attempts left: {}".format(attempts))
+				attempts -= 1
+				device = None
+				time.sleep(5)
+			else:
+				raise e
 
 if __name__ == '__main__':
 	main()

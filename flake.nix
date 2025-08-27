@@ -8,7 +8,8 @@
       pkgs = forAllSystems (system: nixpkgs.legacyPackages.${system});
     in {
       packages = forAllSystems (system: {
-        default = (pkgs.${system}.callPackage ./prolin-xcb-client.nix { });
+        default = (pkgs.${system}.callPackage ./prolin-xcb-client.nix { source = self; });
+        git = (pkgs.${system}.callPackage ./prolin-xcb-client.nix { });
       });
     };
 }

@@ -1,4 +1,5 @@
 *.o
 *.pyc
+__pycache__
 dumps
 result

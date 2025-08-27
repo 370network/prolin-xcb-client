@@ -98,7 +98,7 @@ class AdbCommands(object):
 
         return connection
 
-    def ConnectDevice(self, port_path=None, serial=None, default_timeout_ms=None, **kwargs):
+    def ConnectDevice(self, port_path=None, serial=None, ip=None, serial_port=None, default_timeout_ms=None, **kwargs):
         """Convenience function to setup a transport handle for the adb device from
              usb path or serial then connect to it.
 
@@ -131,11 +131,11 @@ class AdbCommands(object):
             # if necessary, convert serial to a unicode string
             if isinstance(serial, (bytes, bytearray)):
                 serial = serial.decode('utf-8')
-
-            if serial and ':' in serial:
-                self._handle = common.TcpHandle(serial, timeout_ms=default_timeout_ms)
-            elif 'tty' in serial:
-                self._handle = common.SerialHandle(serial, timeout_ms=default_timeout_ms)
+                
+            if ip is not None:
+                self._handle = common.TcpHandle(ip, timeout_ms=default_timeout_ms)
+            elif serial_port is not None:
+                self._handle = common.SerialHandle(serial_port, timeout_ms=default_timeout_ms)
             else:
                 self._handle = common.UsbHandle.FindAndOpen(
                     DeviceIsAvailable, port_path=port_path, serial=serial,

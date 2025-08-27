@@ -21,8 +21,11 @@ def scandir(path, device):
 	directories = []
 	unknowns = []
 	result = device.List(path)
-	for i in result[2:]:
-		if stat.S_ISDIR(i[1]):
+	for i in result:
+		is_dir = stat.S_ISDIR(i[1])
+		if is_dir and i[0].decode('utf-8') in [".", ".."]:
+			continue
+		if is_dir:
 			directories.append(i[0])
 		if stat.S_ISREG(i[1]) and ((i[1] & stat.S_IRUSR) or (i[1] & stat.S_IRGRP) or (i[1] & stat.S_IROTH)):
 			files.append(i[0])
@@ -31,7 +34,7 @@ def scandir(path, device):
 	return files, directories, unknowns
 
 def tree(path, device):
-	exclude = ["proc", "sys", "dev"]
+	exclude = ["/proc", "/sys", "/dev"]
 	all_files = []
 	all_directories = []
 	all_unknowns = []
@@ -42,9 +45,10 @@ def tree(path, device):
 		for file in files:
 			all_files.append(current + file.decode('utf-8'))
 		for directory in directories:
-			all_directories.append(current + directory.decode('utf-8') + '/')
-			if directory.decode('utf-8') not in exclude:
-				queue.append(current + directory.decode('utf-8') + '/')
+			current_directory = current + directory.decode('utf-8')
+			all_directories.append(current_directory + '/')
+			if current_directory not in exclude:
+				queue.append(current_directory + '/')
 		if not queue:
 			break
 		current = queue.pop()
@@ -52,17 +56,11 @@ def tree(path, device):
 
 	return all_files, all_directories, all_unknowns
 
-def cmd_dump(device, args, extra_args):
-	if len(extra_args) < 1:
-		print("dump <dump name> [optional:  device path to dump]")
-		exit(1)
-	name = extra_args[0]
-	target = "dumps/" + name + '/'
-	device_path = "/"
-	if len(extra_args) > 1:
-		device_path = extra_args[1]
-		if not device_path.endswith("/"):
-			device_path += "/"
+def pull_recursive(device, args, device_path, target):
+	if not target.endswith("/"):
+		target += "/"
+	if not device_path.endswith("/"):
+		device_path += "/"
 	print("[+] Listing everything from: {}".format(device_path))
 	all_files, all_directories, all_unknowns = tree(device_path, device)
 	print("[+] Writing to local path: {}".format(target))
@@ -76,18 +74,29 @@ def cmd_dump(device, args, extra_args):
 			os.makedirs(target + dir, exist_ok=True)
 	print("[+] Pulling all files")
 	for file in all_files:
-		if not os.path.isfile(target + file):
-			time.sleep(1)
-			try:
-				device.Pull(file, target + file)
-				print("[+] Downloading " + file)
-			except:
-				print("[-] Failed downloading " + file)
-				os.remove(target + file)
-				# This sucks but...
-				device = None
-				time.sleep(5)
-				device = init_device(args)
+		time.sleep(0.1)
+		try:
+			device.Pull(file, target + file)
+			print("[+] Downloading " + file)
+		except:
+			print("[-] Failed downloading " + file)
+			os.remove(target + file)
+			# This sucks but...
+			device = None
+			time.sleep(5)
+			device = init_device(args)
+	return all_files, all_directories, all_unknowns
+
+def cmd_dump(device, args, extra_args):
+	if len(extra_args) < 1:
+		print("dump <dump name> [optional:  device path to dump]")
+		exit(1)
+	name = extra_args[0]
+	target = "dumps/" + name + '/'
+	device_path = "/"
+	if len(extra_args) > 1:
+		device_path = extra_args[1]
+	all_files, all_directories, all_unknowns = pull_recursive(device, args, device_path, target)
 	print("[+] Saving lists")
 	with open(target + 'files.txt', 'w') as f:
 		f.write(json.dumps(all_files))
@@ -111,19 +120,46 @@ def handle_command(args, extra_args):
 		if len(extra_args) < 1:
 			print("Missing args: pull <device source> [optional: local destination]")
 			exit(1)
+		device_source = extra_args[0]
 		if len(extra_args) < 2:
-			target = extra_args[0].replace('/', '_')
+			target = device_source.replace('/', '_')
 		else:
 			target = extra_args[1]
-		root = device.Pull(extra_args[0], target)
-		print(root)
+		if 0 < len(device.List(device_source)):
+			#Is a dir, we gotta do manually
+			pull_recursive(device, args, device_source, target)
+		else:
+			root = device.Pull(device_source, target)
+			print(root)
 
 	elif command == 'push':
 		if len(extra_args) < 2:
 			print("Missing args: push <local source> <device destination>")
 			exit(1)
-		root = device.Push(extra_args[0], extra_args[1])
-		print(root)
+
+		source_root = extra_args[0]
+		destination_root = extra_args[1]
+		if os.path.isdir(source_root):
+			# We need to send each file individually, the device will create the intermediate dirs
+			if not source_root.endswith("/"):
+				source_root += "/"
+			if not destination_root.endswith("/"):
+				destination_root += "/"
+			# Add the dir we are sending at the end of dest root
+			destination_root += os.path.split(os.path.dirname(source_root))[-1] + "/"
+			for (dirpath, dirs, files) in os.walk(source_root, topdown=True):
+				if not dirpath.endswith("/"):
+					dirpath += "/"
+				dest_path = destination_root + dirpath.replace(source_root, "")
+				if not dest_path.endswith("/"):
+					dest_path += "/"
+				for file in files:
+					source_file = dirpath + file
+					dest_file = dest_path + file
+					print("[+] Uploading " + source_file + " -> " + dest_file)
+					device.Push(source_file, dest_file)
+		else:
+			device.Push(source_root, destination_root)
 
 	elif command == 'logcat':
 		logcat = device.Logcat(options=extra_args)
@@ -142,7 +178,7 @@ def handle_command(args, extra_args):
 		print("The protocol for port forwarding should be ADB compatible. However python-adb doesn't support it as of now")
 
 	elif command == 'dump':
-		cmd_dump(device, extra_args)
+		cmd_dump(device, args, extra_args)
 
 	else:
 		print("Error: Unknown command! {}".format(command))

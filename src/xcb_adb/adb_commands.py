@@ -131,7 +131,7 @@ class AdbCommands(object):
             # if necessary, convert serial to a unicode string
             if isinstance(serial, (bytes, bytearray)):
                 serial = serial.decode('utf-8')
-                
+
             if ip is not None:
                 self._handle = common.TcpHandle(ip, timeout_ms=default_timeout_ms)
             elif serial_port is not None:
@@ -264,12 +264,9 @@ class AdbCommands(object):
         """
 
         if isinstance(source_file, str):
+            #We can't push directories as is, each file must be sent separately by walking the tree
             if os.path.isdir(source_file):
-                self.Shell("mkdir " + device_filename)
-                for f in os.listdir(source_file):
-                    self.Push(os.path.join(source_file, f), device_filename + '/' + f,
-                              progress_callback=progress_callback)
-                return
+            	raise ValueError("Attempted to push a directory! {}".format(source_file))
             source_file = open(source_file, "rb")
 
         with source_file:
@@ -280,7 +277,7 @@ class AdbCommands(object):
                 kwargs['st_mode'] = st_mode
             self.filesync_handler.Push(connection, source_file, device_filename,
                                        mtime=int(mtime), progress_callback=progress_callback, **kwargs)
-        connection.Close()
+            connection.Close()
 
     def Pull(self, device_filename, dest_file=None, timeout_ms=None, progress_callback=None):
         """Pull a file from the device.

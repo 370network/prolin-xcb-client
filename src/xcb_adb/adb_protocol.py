@@ -237,6 +237,8 @@ class AdbMessage(object):
     def Read(cls, usb, expected_cmds, timeout_ms=None, total_timeout_ms=None):
         """Receive a response from the device."""
         total_timeout_ms = usb.Timeout(total_timeout_ms)
+        if total_timeout_ms is None:
+        	total_timeout_ms = 30 * 1000
         start = time.time()
         while True:
             msg = usb.BulkRead(24, timeout_ms)
@@ -257,9 +259,8 @@ class AdbMessage(object):
             data = bytearray()
             while data_length > 0:
                 temp = usb.BulkRead(data_length, timeout_ms)
-                if len(temp) != data_length:
-                    print(
-                        "Data_length {} does not match actual number of bytes read: {}".format(data_length, len(temp)))
+                #if len(temp) != data_length:
+                #    print("Data_length {} does not match actual number of bytes read: {}".format(data_length, len(temp)))
                 data += temp
 
                 data_length -= len(temp)

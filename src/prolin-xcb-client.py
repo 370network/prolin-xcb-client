@@ -51,7 +51,7 @@ def tree(path, device):
 
 	return all_files, all_directories, all_unknowns
 
-def cmd_dump(device, extra_args):
+def cmd_dump(device, args, extra_args):
 	if len(extra_args) < 1:
 		print("dump <dump name> [optional:  device path to dump]")
 		exit(1)
@@ -60,6 +60,8 @@ def cmd_dump(device, extra_args):
 	device_path = "/"
 	if len(extra_args) > 1:
 		device_path = extra_args[1]
+		if not device_path.endswith("/"):
+			device_path += "/"
 	print("[+] Listing everything from: {}".format(device_path))
 	all_files, all_directories, all_unknowns = tree(device_path, device)
 	print("[+] Writing to local path: {}".format(target))
@@ -70,7 +72,7 @@ def cmd_dump(device, extra_args):
 		exit(1)
 	for dir in all_directories:
 		if not os.path.exists(target + dir):
-			os.mkdir(target + dir)
+			os.makedirs(target + dir, exist_ok=True)
 	print("[+] Pulling all files")
 	for file in all_files:
 		if not os.path.isfile(target + file):
@@ -84,7 +86,7 @@ def cmd_dump(device, extra_args):
 				# This sucks but...
 				device = None
 				time.sleep(5)
-				device = init_device(port)
+				device = init_device(args)
 	print("[+] Saving lists")
 	with open(target + 'files.txt', 'w') as f:
 		f.write(json.dumps(all_files))

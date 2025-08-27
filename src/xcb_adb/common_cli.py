@@ -28,7 +28,7 @@ import re
 import sys
 import types
 
-from adb import usb_exceptions
+from xcb_adb import usb_exceptions
 
 
 class _PortPathAction(argparse.Action):

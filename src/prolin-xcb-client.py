@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-from adb import adb_commands
-from adb import sign_m2crypto
+from xcb_adb import adb_commands
+from xcb_adb import sign_m2crypto
 import stat
 import os
 import time

@@ -27,7 +27,7 @@ import serial
 import libusb1
 import usb1
 
-from adb import usb_exceptions
+from xcb_adb import usb_exceptions
 
 DEFAULT_TIMEOUT_MS = 10000
 

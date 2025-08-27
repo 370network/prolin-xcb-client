@@ -23,21 +23,21 @@ import stat
 import sys
 import time
 
-from adb import adb_commands
-from adb import common_cli
+from xcb_adb import adb_commands
+from xcb_adb import common_cli
 
 try:
-    from adb import sign_m2crypto
+    from xcb_adb import sign_m2crypto
 
     rsa_signer = sign_m2crypto.M2CryptoSigner
 except ImportError:
     try:
-        from adb import sign_pythonrsa
+        from xcb_adb import sign_pythonrsa
 
         rsa_signer = sign_pythonrsa.PythonRSASigner.FromRSAKeyPath
     except ImportError:
         try:
-            from adb import sign_pycryptodome
+            from xcb_adb import sign_pycryptodome
 
             rsa_signer = sign_pycryptodome.PycryptodomeAuthSigner
         except ImportError:

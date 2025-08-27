@@ -27,9 +27,9 @@ import os
 import socket
 import posixpath
 
-from adb import adb_protocol
-from adb import common
-from adb import filesync_protocol
+from xcb_adb import adb_protocol
+from xcb_adb import common
+from xcb_adb import filesync_protocol
 
 # From adb.h
 CLASS = 0xFF
@@ -40,7 +40,7 @@ DeviceIsAvailable = common.InterfaceMatcher(CLASS, SUBCLASS, PROTOCOL)
 
 try:
     # Imported locally to keep compatibility with previous code.
-    from adb.sign_m2crypto import M2CryptoSigner
+    from xcb_adb.sign_m2crypto import M2CryptoSigner
 except ImportError:
     # Ignore this error when M2Crypto is not installed, there are other options.
     pass

@@ -14,7 +14,7 @@
 
 from M2Crypto import RSA
 
-from adb import adb_protocol
+from xcb_adb import adb_protocol
 
 
 class M2CryptoSigner(adb_protocol.AuthSigner):

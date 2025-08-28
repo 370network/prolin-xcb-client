@@ -159,6 +159,12 @@ def handle_command(args, extra_args):
 					print("[+] Uploading " + source_file + " -> " + dest_file)
 					device.Push(source_file, dest_file)
 		else:
+			#Destination is a dir, append file name otherwise thinks we are creating a file with same path as dir
+			if 0 < len(device.List(destination_root)):
+				if not destination_root.endswith("/"):
+					destination_root += "/"
+				destination_root += os.path.split(source_root)[-1]
+			print("[+] Uploading " + source_root + " -> " + destination_root)
 			device.Push(source_root, destination_root)
 
 	elif command == 'logcat':

@@ -156,8 +156,16 @@ def handle_command(args, extra_args):
 				for file in files:
 					source_file = dirpath + file
 					dest_file = dest_path + file
-					print("[+] Uploading " + source_file + " -> " + dest_file)
-					device.Push(source_file, dest_file)
+					try:
+						print("[+] Uploading " + source_file + " -> " + dest_file)
+						device.Push(source_file, dest_file)
+					except:
+						print("[-] Failed, retrying...")
+						# This sucks but...
+						device = None
+						time.sleep(5)
+						device = init_device(args)
+						device.Push(source_file, dest_file)
 		else:
 			#Destination is a dir, append file name otherwise thinks we are creating a file with same path as dir
 			if 0 < len(device.List(destination_root)):

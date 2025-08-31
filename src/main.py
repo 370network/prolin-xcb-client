@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from xcb_adb import adb_commands
 from xcb_adb import sign_m2crypto
+from xcb_adb.usb_exceptions import AdbCommandFailureException
 import stat
 import os
 import time
@@ -61,26 +62,29 @@ def pull_recursive(device, args, device_path, target):
 		target += "/"
 	if not device_path.endswith("/"):
 		device_path += "/"
-	print("[+] Listing everything from: {}".format(device_path))
+	print("[+] Preparing to pull '{}' into '{}'".format(device_path, target))
 	all_files, all_directories, all_unknowns = tree(device_path, device)
-	print("[+] Writing to local path: {}".format(target))
 	if not os.path.exists(target):
 		os.makedirs(target, exist_ok=True)
 	if not os.path.isdir(target):
 		print("Target is not a directory")
 		exit(1)
 	for dir in all_directories:
-		if not os.path.exists(target + dir):
-			os.makedirs(target + dir, exist_ok=True)
+		download_path = target + dir.replace(device_path, "")
+		if not os.path.exists(download_path):
+			os.makedirs(download_path, exist_ok=True)
 	print("[+] Pulling all files")
 	for file in all_files:
-		time.sleep(0.1)
+		time.sleep(0.5)
+		download_path = target + file.replace(device_path, "")
 		try:
-			device.Pull(file, target + file)
-			print("[+] Downloading " + file)
-		except:
+			if device.Pull(file, download_path):
+				print("[+] Downloaded " + file + " -> " + download_path)
+			else:
+				raise Exception("device.Pull unsuccessful")
+		except (ValueError, AdbCommandFailureException):
 			print("[-] Failed downloading " + file)
-			os.remove(target + file)
+			os.remove(download_path)
 			# This sucks but...
 			device = None
 			time.sleep(5)
@@ -93,15 +97,24 @@ def cmd_pull(device, args, extra_args):
 			exit(1)
 		device_source = extra_args[0]
 		if len(extra_args) < 2:
-			target = device_source.replace('/', '_')
+			target = os.path.split(device_source)[-1]
 		else:
 			target = extra_args[1]
+		if os.path.exists(target):
+			print("Pull destination '{}' already exists!".format(target))
+			exit(1)
 		if 0 < len(device.List(device_source)):
 			#Is a dir, we gotta do manually
 			pull_recursive(device, args, device_source, target)
 		else:
-			root = device.Pull(device_source, target)
-			print(root)
+			try:
+				if device.Pull(device_source, target):
+					print("[+] Downloaded " + device_source + " -> " + target)
+				else:
+					raise Exception("device.Pull unsuccessful")
+			except (ValueError, AdbCommandFailureException):
+				os.remove(target)
+				print("[-] Failed downloading " + device_source)
 
 def cmd_push(device, args, extra_args):
 	if len(extra_args) < 2:

@@ -118,46 +118,47 @@ def cmd_pull(device, args, extra_args):
 
 def cmd_push(device, args, extra_args):
 	if len(extra_args) < 2:
-		print("Missing args: push <local source> <device destination>")
+		print("Missing args: push <local source 1> <local source 2> ... <device destination>")
 		exit(1)
 
-	source_root = extra_args[0]
-	destination_root = extra_args[1]
-	if os.path.isdir(source_root):
-		# We need to send each file individually, the device will create the intermediate dirs
-		if not source_root.endswith("/"):
-			source_root += "/"
-		if not destination_root.endswith("/"):
-			destination_root += "/"
-		# Add the dir we are sending at the end of dest root
-		destination_root += os.path.split(os.path.dirname(source_root))[-1] + "/"
-		for (dirpath, dirs, files) in os.walk(source_root, topdown=True):
-			if not dirpath.endswith("/"):
-				dirpath += "/"
-			dest_path = destination_root + dirpath.replace(source_root, "")
-			if not dest_path.endswith("/"):
-				dest_path += "/"
-			for file in files:
-				source_file = dirpath + file
-				dest_file = dest_path + file
-				try:
-					print("[+] Uploading " + source_file + " -> " + dest_file)
-					device.Push(source_file, dest_file)
-				except:
-					print("[-] Failed, retrying...")
-					# This sucks but...
-					device = None
-					time.sleep(5)
-					device = init_device(args)
-					device.Push(source_file, dest_file)
-	else:
-		#Destination is a dir, append file name otherwise thinks we are creating a file with same path as dir
-		if 0 < len(device.List(destination_root)):
+	#Iterate all args except last one for sources
+	for source_root in extra_args[:-1]:
+		destination_root = extra_args[-1]
+		if os.path.isdir(source_root):
+			# We need to send each file individually, the device will create the intermediate dirs
+			if not source_root.endswith("/"):
+				source_root += "/"
 			if not destination_root.endswith("/"):
 				destination_root += "/"
-			destination_root += os.path.split(source_root)[-1]
-		print("[+] Uploading " + source_root + " -> " + destination_root)
-		device.Push(source_root, destination_root)
+			# Add the dir we are sending at the end of dest root
+			destination_root += os.path.split(os.path.dirname(source_root))[-1] + "/"
+			for (dirpath, dirs, files) in os.walk(source_root, topdown=True):
+				if not dirpath.endswith("/"):
+					dirpath += "/"
+				dest_path = destination_root + dirpath.replace(source_root, "")
+				if not dest_path.endswith("/"):
+					dest_path += "/"
+				for file in files:
+					source_file = dirpath + file
+					dest_file = dest_path + file
+					try:
+						print("[+] Uploading " + source_file + " -> " + dest_file)
+						device.Push(source_file, dest_file)
+					except:
+						print("[-] Failed, retrying...")
+						# This sucks but...
+						device = None
+						time.sleep(5)
+						device = init_device(args)
+						device.Push(source_file, dest_file)
+		else:
+			#Destination is a dir, append file name otherwise thinks we are creating a file with same path as dir
+			if 0 < len(device.List(destination_root)):
+				if not destination_root.endswith("/"):
+					destination_root += "/"
+				destination_root += os.path.split(source_root)[-1]
+			print("[+] Uploading " + source_root + " -> " + destination_root)
+			device.Push(source_root, destination_root)
 
 def cmd_dump(device, args, extra_args):
 	if len(extra_args) < 1:

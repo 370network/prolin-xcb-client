@@ -215,7 +215,7 @@ def handle_command(args, extra_args):
 		cmd_dump(device, args, extra_args)
 
 	elif command == 'reboot':
-		device.Reboot(bytes(extra_args[0], "utf-8") if len(extra_args) else b"")
+		device.Reboot(extra_args[0] if len(extra_args) else "")
 
 	else:
 		print("Error: Unknown command! {}".format(command))

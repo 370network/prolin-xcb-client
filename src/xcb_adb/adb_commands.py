@@ -335,17 +335,16 @@ class AdbCommands(object):
         connection.Close()
         return listing
 
-    def Reboot(self, destination=b''):
+    def Reboot(self, destination=''):
         """Reboot the device.
 
         Args:
           destination: Specify 'bootloader' for fastboot.
         """
-        self.protocol_handler.Open(self._handle, b'reboot:%s' % destination)
-
-    def RebootBootloader(self):
-        """Reboot device into fastboot."""
-        self.Reboot(b'bootloader')
+        try:
+            self.protocol_handler.Command(self._handle, service=b'reboot', command=destination, timeout_ms=1500)
+        except:
+            pass
 
     def Remount(self):
         """Remount / as read-write."""

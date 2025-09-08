@@ -214,6 +214,9 @@ def handle_command(args, extra_args):
 	elif command == 'dump':
 		cmd_dump(device, args, extra_args)
 
+	elif command == 'reboot':
+		device.Reboot(bytes(extra_args[0], "utf-8") if len(extra_args) else b"")
+
 	else:
 		print("Error: Unknown command! {}".format(command))
 		exit(1)
@@ -229,7 +232,7 @@ def main():
 	parser.add_argument('-r', "--retry", type=int, default=5, dest="retry", help="How many connections retries to attempt")
 	parser.add_argument("command", choices=[
 		"ls", "pull", "push", "logcat", "forward",
-		"get-state", "dump"
+		"get-state", "dump", "reboot"
 	], help="What command to run")
 	args, extra_args = parser.parse_known_args()
 
@@ -261,7 +264,6 @@ def main():
 			if 0 < attempts:
 				print("Got connection error, attempts left: {}".format(attempts))
 				attempts -= 1
-				device = None
 				time.sleep(5)
 			else:
 				raise e

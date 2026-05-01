@@ -17,9 +17,7 @@ python3Packages.buildPythonApplication rec {
   ];
 
   dependencies = with python3Packages; [
-    m2crypto
     pyserial
-    libusb1
   ];
 
   meta = with lib; {

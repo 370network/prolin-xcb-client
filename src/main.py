@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 from xcb_adb import adb_commands
-from xcb_adb import sign_m2crypto
 from xcb_adb.usb_exceptions import AdbCommandFailureException
 import stat
 import os

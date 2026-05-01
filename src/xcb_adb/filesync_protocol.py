@@ -23,8 +23,6 @@ import stat
 import struct
 import time
 
-import libusb1
-
 from xcb_adb import adb_protocol
 from xcb_adb import usb_exceptions
 

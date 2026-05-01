@@ -136,10 +136,6 @@ class AdbCommands(object):
                 self._handle = common.TcpHandle(ip, timeout_ms=default_timeout_ms)
             elif serial_port is not None:
                 self._handle = common.SerialHandle(serial_port, timeout_ms=default_timeout_ms)
-            else:
-                self._handle = common.UsbHandle.FindAndOpen(
-                    DeviceIsAvailable, port_path=port_path, serial=serial,
-                    timeout_ms=default_timeout_ms)
 
         self._Connect(**kwargs)
 

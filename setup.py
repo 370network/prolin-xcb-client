@@ -6,6 +6,6 @@ setup(
   name='prolin-xcb-client',
   version='1.0',
   entry_points = {
-      'console_scripts': ['prolin-xcb-client=main:main' ,'paxclient=main:main'],
+      'console_scripts': ['paxclient=main:main'],
   }
 )

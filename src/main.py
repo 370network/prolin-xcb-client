@@ -69,13 +69,21 @@ def pull_recursive(device, args, device_path, target):
 		print("Target is not a directory")
 		exit(1)
 	for dir in all_directories:
-		download_path = target + dir.replace(device_path, "")
+		if dir.startswith(device_path):
+			full_dir = dir[len(device_path):]
+		else:
+			full_dir = dir.lstrip('/')
+		download_path = os.path.join(target, full_dir)
 		if not os.path.exists(download_path):
 			os.makedirs(download_path, exist_ok=True)
 	print("[+] Pulling all files")
 	for file in all_files:
 		time.sleep(0.5)
-		download_path = target + file.replace(device_path, "")
+		if file.startswith(device_path):
+			full_file = file[len(device_path):]
+		else:
+			full_file = file.lstrip('/')
+		download_path = os.path.join(target, full_file)
 		try:
 			if device.Pull(file, download_path):
 				print("[+] Downloaded " + file + " -> " + download_path)
